@@ -153,6 +153,81 @@ class Index:
 
     def __repr__(self):
         return "Index(" + str(self.value) + ")"
+
+
+class Floats:
+    def __init__(self, value):
+        self.value = float(value)
+
+    def __repr__(self):
+        return "Floats(" + str(self.value) + ")"
+
+    @staticmethod
+    def add(a, b):
+        return float(a.value + b.value)
+
+    @staticmethod
+    def sub(a, b):
+        return float(a.value - b.value)
+
+    @staticmethod
+    def mul(a, b):
+        return float(a.value * b.value)
+
+    @staticmethod
+    def div(a, b):
+        try: return float(a.value / b.value)
+        except ZeroDivisionError: return float(1)
+
+
+class Floats2(Floats):
+    def __init__(self, value):
+        Floats.__init__(self, value)
+
+    def __repr__(self):
+        return "Floats2(" + str(self.value) + ")"
+
+    @staticmethod
+    def add2(a, b):
+        return Floats(a.value + b.value)
+
+    @staticmethod
+    def sub2(a, b):
+        return Floats(a.value - b.value)
+
+    @staticmethod
+    def mul2(a, b):
+        return Floats(a.value * b.value)
+
+    @staticmethod
+    def div2(a, b):
+        try: return Floats(a.value / b.value)
+        except ZeroDivisionError: return Floats(1)
+
+
+class Floats3(Floats2):
+    def __init__(self, value):
+        Floats2.__init__(self, value)
+
+    def __repr__(self):
+        return "Floats3(" + str(self.value) + ")"
+
+    @staticmethod
+    def add3(a, b):
+        return Floats2(a.value + b.value)
+
+    @staticmethod
+    def sub3(a, b):
+        return Floats2(a.value - b.value)
+
+    @staticmethod
+    def mul3(a, b):
+        return Floats2(a.value * b.value)
+
+    @staticmethod
+    def div3(a, b):
+        try: return Floats2(a.value / b.value)
+        except ZeroDivisionError: return Floats2(1)
     
 
 def HoG(image, shape, position, size):
@@ -167,21 +242,39 @@ def HoG(image, shape, position, size):
 def bins(histogram, index):
     return histogram.get(index.value)
 
+def bins1(histogram, index):
+    return Floats(bins(histogram, index))
+
+def bins2(histogram, index):
+    return Floats2(bins(histogram, index))
+
+def bins3(histogram, index):
+    return Floats3(bins(histogram, index))
+
 
 def distance(histogram_a, histogram_b):
     sum = 0
 
-    for (a, b) in zip(histogram_a, histogram_b):
+    for (a, b) in zip(histogram_a.array, histogram_b.array):
         sum += (a - b)**2
 
     return math.sqrt(sum)
+
+def distance1(histogram_a, histogram_b):
+    return Floats(distance(histogram_a, histogram_b))
+
+def distance2(histogram_a, histogram_b):
+    return Floats2(distance(histogram_a, histogram_b))
+
+def distance3(histogram_a, histogram_b):
+    return Floats3(distance(histogram_a, histogram_b))
 
 
 def eval_classification(individual):
     print(individual)
     
     # Transform the tree expression in a callable function
-    #func = toolbox.compile(expr=individual)
+    func = toolbox.compile(expr=individual)
     
     # Randomly sample 30 images
     train_set = random.sample(image_set, 30)
@@ -189,8 +282,7 @@ def eval_classification(individual):
     # Evaluate the number of correctly classified images
     result = 0
     for image in train_set:
-        IN0 = image
-        outcome = eval(str(individual))
+        outcome = func(image)
         if (outcome > 0 and image.species == 1) or (outcome < 0 and image.species == 0):
             result += 1
 
@@ -239,11 +331,26 @@ for i in range(0, 60):
 
 pset = gp.PrimitiveSetTyped("MAIN", itertools.repeat(Image, 1), float, "IN")
 
-#pset.addPrimitive(operator.add, [float, float], float)
-#pset.addPrimitive(operator.sub, [float, float], float)
-#pset.addPrimitive(operator.mul, [float, float], float)
-pset.addPrimitive(bins, [Histogram, Index], float)
-#pset.addPrimitive(distance, [Histogram, Histogram], float)
+pset.addPrimitive(Floats.add,   [Floats, Floats], float)
+pset.addPrimitive(Floats2.add2, [Floats2, Floats2], Floats)
+pset.addPrimitive(Floats3.add3, [Floats3, Floats3], Floats2)
+pset.addPrimitive(Floats.sub,   [Floats, Floats], float)
+pset.addPrimitive(Floats2.sub2, [Floats2, Floats2], Floats)
+pset.addPrimitive(Floats3.sub3, [Floats3, Floats3], Floats2)
+pset.addPrimitive(Floats.mul,   [Floats, Floats], float)
+pset.addPrimitive(Floats2.mul2, [Floats2, Floats2], Floats)
+pset.addPrimitive(Floats3.mul3, [Floats3, Floats3], Floats2)
+pset.addPrimitive(Floats.div,   [Floats, Floats], float)
+pset.addPrimitive(Floats2.div2, [Floats2, Floats2], Floats)
+pset.addPrimitive(Floats3.div3, [Floats3, Floats3], Floats2)
+pset.addPrimitive(bins,  [Histogram, Index], float)
+pset.addPrimitive(bins1, [Histogram, Index], Floats)
+pset.addPrimitive(bins2, [Histogram, Index], Floats2)
+pset.addPrimitive(bins3, [Histogram, Index], Floats3)
+pset.addPrimitive(distance,  [Histogram, Histogram], float)
+pset.addPrimitive(distance1, [Histogram, Histogram], Floats)
+pset.addPrimitive(distance2, [Histogram, Histogram], Floats2)
+pset.addPrimitive(distance3, [Histogram, Histogram], Floats3)
 pset.addPrimitive(HoG, [Image, Shape, Position, Size], Histogram)
 
 pset.addEphemeralConstant("shape", lambda: Shape(random.randint(0, 1)), Shape)
@@ -253,6 +360,11 @@ pset.addEphemeralConstant("index", lambda: Index(random.randint(0, 7)), Index)
 
 print (pset.primitives)
 print (pset.terminals)
+  
+pset.context['Position'] = Position
+pset.context['Shape'] = Shape
+pset.context['Size'] = Size
+pset.context['Index'] = Index
 
 
 creator.create("FitnessMax", base.Fitness, weights=(1.0,))
