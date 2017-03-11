@@ -16,6 +16,8 @@ from deap import tools
 
 MIN_WIDTH = 500
 MIN_HEIGHT = 500
+toolbox = base.Toolbox()
+image_set = []
 
 class Image:
     def __init__(self, path, species):
@@ -272,7 +274,7 @@ def distance3(histogram_a, histogram_b):
 
 def eval_classification(individual):
     print(individual)
-    
+
     # Transform the tree expression in a callable function
     func = toolbox.compile(expr=individual)
     
@@ -309,6 +311,7 @@ def plot_tree2(individual):
     import matplotlib.pyplot as plt
     import networkx as nx
 
+    nodes, edges, labels = gp.graph(individual)
     g = nx.Graph()
     g.add_nodes_from(nodes)
     g.add_edges_from(edges)
@@ -322,69 +325,62 @@ def plot_tree2(individual):
 
 #################################################
 
-
-image_set = []
-for i in range(0, 60):
-    image_set.append(Image("../../Dane/COIL20/obj1__" + str(i) + ".png", 0))
-    image_set.append(Image("../../Dane/COIL20/obj2__" + str(i) + ".png", 1))
-
-
-pset = gp.PrimitiveSetTyped("MAIN", itertools.repeat(Image, 1), float, "IN")
-
-pset.addPrimitive(Floats.add,   [Floats, Floats], float)
-pset.addPrimitive(Floats2.add2, [Floats2, Floats2], Floats)
-pset.addPrimitive(Floats3.add3, [Floats3, Floats3], Floats2)
-pset.addPrimitive(Floats.sub,   [Floats, Floats], float)
-pset.addPrimitive(Floats2.sub2, [Floats2, Floats2], Floats)
-pset.addPrimitive(Floats3.sub3, [Floats3, Floats3], Floats2)
-pset.addPrimitive(Floats.mul,   [Floats, Floats], float)
-pset.addPrimitive(Floats2.mul2, [Floats2, Floats2], Floats)
-pset.addPrimitive(Floats3.mul3, [Floats3, Floats3], Floats2)
-pset.addPrimitive(Floats.div,   [Floats, Floats], float)
-pset.addPrimitive(Floats2.div2, [Floats2, Floats2], Floats)
-pset.addPrimitive(Floats3.div3, [Floats3, Floats3], Floats2)
-pset.addPrimitive(bins,  [Histogram, Index], float)
-pset.addPrimitive(bins1, [Histogram, Index], Floats)
-pset.addPrimitive(bins2, [Histogram, Index], Floats2)
-pset.addPrimitive(bins3, [Histogram, Index], Floats3)
-pset.addPrimitive(distance,  [Histogram, Histogram], float)
-pset.addPrimitive(distance1, [Histogram, Histogram], Floats)
-pset.addPrimitive(distance2, [Histogram, Histogram], Floats2)
-pset.addPrimitive(distance3, [Histogram, Histogram], Floats3)
-pset.addPrimitive(HoG, [Image, Shape, Position, Size], Histogram)
-
-pset.addEphemeralConstant("shape", lambda: Shape(random.randint(0, 1)), Shape)
-pset.addEphemeralConstant("coords", lambda: Position(random.randint(0, MIN_WIDTH), random.randint(0, MIN_HEIGHT)), Position)
-pset.addEphemeralConstant("size", lambda: Size(random.randint(3, MIN_WIDTH), random.randint(3, MIN_HEIGHT)), Size)
-pset.addEphemeralConstant("index", lambda: Index(random.randint(0, 7)), Index)
-
-print (pset.primitives)
-print (pset.terminals)
-  
-pset.context['Position'] = Position
-pset.context['Shape'] = Shape
-pset.context['Size'] = Size
-pset.context['Index'] = Index
-
-
-creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMax)
-
-
-toolbox = base.Toolbox()
-toolbox.register("expr", gp.genHalfAndHalf, pset=pset, min_=2, max_=4)
-toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
-toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-toolbox.register("compile", gp.compile, pset=pset)
-toolbox.register("evaluate", eval_classification)
-toolbox.register("select", tools.selTournament, tournsize=3)
-toolbox.register("mate", gp.cxOnePoint)
-toolbox.register("expr_mut", gp.genFull, min_=0, max_=2)
-toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
-
-
 def main():
     #random.seed(11)
+    for i in range(0, 60):
+        image_set.append(Image("../../Dane/COIL20/obj1__" + str(i) + ".png", 0))
+        image_set.append(Image("../../Dane/COIL20/obj2__" + str(i) + ".png", 1))
+
+    pset = gp.PrimitiveSetTyped("MAIN", itertools.repeat(Image, 1), float, "IN")
+
+    pset.addPrimitive(Floats.add,   [Floats, Floats], float)
+    pset.addPrimitive(Floats2.add2, [Floats2, Floats2], Floats)
+    pset.addPrimitive(Floats3.add3, [Floats3, Floats3], Floats2)
+    pset.addPrimitive(Floats.sub,   [Floats, Floats], float)
+    pset.addPrimitive(Floats2.sub2, [Floats2, Floats2], Floats)
+    pset.addPrimitive(Floats3.sub3, [Floats3, Floats3], Floats2)
+    pset.addPrimitive(Floats.mul,   [Floats, Floats], float)
+    pset.addPrimitive(Floats2.mul2, [Floats2, Floats2], Floats)
+    pset.addPrimitive(Floats3.mul3, [Floats3, Floats3], Floats2)
+    pset.addPrimitive(Floats.div,   [Floats, Floats], float)
+    pset.addPrimitive(Floats2.div2, [Floats2, Floats2], Floats)
+    pset.addPrimitive(Floats3.div3, [Floats3, Floats3], Floats2)
+    pset.addPrimitive(bins,  [Histogram, Index], float)
+    pset.addPrimitive(bins1, [Histogram, Index], Floats)
+    pset.addPrimitive(bins2, [Histogram, Index], Floats2)
+    pset.addPrimitive(bins3, [Histogram, Index], Floats3)
+    pset.addPrimitive(distance,  [Histogram, Histogram], float)
+    pset.addPrimitive(distance1, [Histogram, Histogram], Floats)
+    pset.addPrimitive(distance2, [Histogram, Histogram], Floats2)
+    pset.addPrimitive(distance3, [Histogram, Histogram], Floats3)
+    pset.addPrimitive(HoG, [Image, Shape, Position, Size], Histogram)
+
+    pset.addEphemeralConstant("shape", lambda: Shape(random.randint(0, 1)), Shape)
+    pset.addEphemeralConstant("coords", lambda: Position(random.randint(0, MIN_WIDTH), random.randint(0, MIN_HEIGHT)), Position)
+    pset.addEphemeralConstant("size", lambda: Size(random.randint(3, MIN_WIDTH), random.randint(3, MIN_HEIGHT)), Size)
+    pset.addEphemeralConstant("index", lambda: Index(random.randint(0, 7)), Index)
+
+    print (pset.primitives)
+    print (pset.terminals)
+
+    pset.context['Position'] = Position
+    pset.context['Shape'] = Shape
+    pset.context['Size'] = Size
+    pset.context['Index'] = Index
+
+    creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+    creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMax)
+
+    toolbox.register("expr", gp.genHalfAndHalf, pset=pset, min_=2, max_=4)
+    toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
+    toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+    toolbox.register("compile", gp.compile, pset=pset)
+    toolbox.register("evaluate", eval_classification)
+    toolbox.register("select", tools.selTournament, tournsize=3)
+    toolbox.register("mate", gp.cxOnePoint)
+    toolbox.register("expr_mut", gp.genFull, min_=0, max_=2)
+    toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
+
     pop = toolbox.population(n=100)
     hof = tools.HallOfFame(1)
     
