@@ -1,6 +1,4 @@
 #! /usr/bin/python3
-
-import csv
 import png
 import itertools
 import math
@@ -8,19 +6,22 @@ import numpy as np
 import operator
 import random
 
+from termcolor import colored
 from deap import algorithms
 from deap import base
 from deap import creator
 from deap import gp
 from deap import tools
 
-MIN_WIDTH = 500
-MIN_HEIGHT = 500
+DEBUG = True
+MIN_WIDTH = 128
+MIN_HEIGHT = 128
+
 toolbox = base.Toolbox()
 image_set = []
 
 class Image:
-    def __init__(self, path, species):
+    def __init__(self, path, species=None):
         reader = png.Reader(path)
         (w, h, p, m) = reader.read()
         self.width = w
@@ -74,7 +75,7 @@ class Area:
 
             histogram.add(lower_bin, lower_weight)
             histogram.add(upper_bin % 8, upper_weight)
-    
+
 
 class RectangleArea(Area):
     def __init__(self, image, left, top, width, height):
@@ -96,7 +97,7 @@ class RectangleArea(Area):
         
         histogram.normalize()
         return histogram
-    
+
 
 class CircleArea(Area):
     def __init__(self, image, center_x, center_y, radius):
@@ -118,7 +119,7 @@ class CircleArea(Area):
         
         histogram.normalize()
         return histogram
-    
+
 
 class Shape:
     def __init__(self, value):
@@ -271,22 +272,32 @@ def distance2(histogram_a, histogram_b):
 def distance3(histogram_a, histogram_b):
     return Floats3(distance(histogram_a, histogram_b))
 
+def map_eval_result_to_string(result):
+    if result == True:
+         return colored('Passed:', 'green')
+    elif result == False:
+         return colored('Failed:', 'red')
 
 def eval_classification(individual):
-    print(individual)
+    if DEBUG:
+        print(individual)
 
     # Transform the tree expression in a callable function
     func = toolbox.compile(expr=individual)
     
     # Randomly sample 30 images
-    train_set = random.sample(image_set, 30)
-    
+    #train_set = random.sample(image_set, 30)
+    train_set = image_set
+
     # Evaluate the number of correctly classified images
     result = 0
     for image in train_set:
         outcome = func(image)
-        if (outcome > 0 and image.species == 1) or (outcome < 0 and image.species == 0):
+        correctly_classified = ((outcome > 0 and image.species == 1) or (outcome < 0 and image.species == 0))
+        if (correctly_classified):
             result += 1
+        if DEBUG:
+            print(map_eval_result_to_string(correctly_classified)  + str(outcome))
 
     return result,
 
@@ -327,9 +338,9 @@ def plot_tree2(individual):
 
 def main():
     #random.seed(11)
-    for i in range(0, 60):
-        image_set.append(Image("../../Dane/COIL20/obj1__" + str(i) + ".png", 0))
-        image_set.append(Image("../../Dane/COIL20/obj2__" + str(i) + ".png", 1))
+    for i in range(0, 40):
+        image_set.append(Image("../Dane/COIL20/obj1__" + str(i) + ".png", 0))
+        image_set.append(Image("../Dane/COIL20/obj2__" + str(i) + ".png", 1))
 
     pset = gp.PrimitiveSetTyped("MAIN", itertools.repeat(Image, 1), float, "IN")
 
@@ -360,8 +371,10 @@ def main():
     pset.addEphemeralConstant("size", lambda: Size(random.randint(3, MIN_WIDTH), random.randint(3, MIN_HEIGHT)), Size)
     pset.addEphemeralConstant("index", lambda: Index(random.randint(0, 7)), Index)
 
-    print (pset.primitives)
-    print (pset.terminals)
+    if DEBUG:
+        print (pset.primitives)
+    if DEBUG:
+        print (pset.terminals)
 
     pset.context['Position'] = Position
     pset.context['Shape'] = Shape
@@ -394,11 +407,16 @@ def main():
 
     expr = toolbox.individual()
     nodes, edges, labels = gp.graph(expr)
-    plot_tree2(expr)
 
     return pop, stats, hof
 
 
 if __name__ == "__main__":
-    main()
+    pop, stats, hof = main()
+    print(stats['avg'])
+    print(stats['std'])
+    print(stats['min'])
+    print(stats['max'])
+    print(hof[0])
+    plot_tree(hof[0])
 
