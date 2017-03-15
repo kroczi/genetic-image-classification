@@ -25,6 +25,3 @@ for filename in os.listdir(images_dir):
     path_to_image = images_dir + filename 
     image = Image(path_to_image)
     print(str(filename) + ',' + str(classificator(image)))
-
-
-

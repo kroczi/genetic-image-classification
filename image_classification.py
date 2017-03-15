@@ -373,7 +373,6 @@ def main():
 
     if DEBUG:
         print (pset.primitives)
-    if DEBUG:
         print (pset.terminals)
 
     pset.context['Position'] = Position
@@ -419,4 +418,3 @@ if __name__ == "__main__":
     print(stats['max'])
     print(hof[0])
     plot_tree(hof[0])
-
