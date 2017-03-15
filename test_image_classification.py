@@ -1,3 +1,4 @@
+#! /usr/bin/python3
 import image_classification as ic
 import math
 import unittest
