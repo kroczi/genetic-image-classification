@@ -2,6 +2,7 @@
 import png
 import itertools
 import math
+import multiprocessing
 import numpy as np
 import operator
 import random
@@ -13,15 +14,25 @@ from deap import creator
 from deap import gp
 from deap import tools
 
-DEBUG = True
+DEBUG = False
 MIN_WIDTH = 128
 MIN_HEIGHT = 128
 
 toolbox = base.Toolbox()
 image_set = []
 
+class Gradient:
+    def __init__(self, lower_bin, upper_bin, lower_weight, upper_weight):
+        self.lower_bin = int(lower_bin)
+        self.upper_bin = int(upper_bin)
+        self.lower_weight = lower_weight
+        self.upper_weight = upper_weight
+
+
 class Image:
     def __init__(self, path, species=None):
+        if DEBUG:
+            print(path)
         reader = png.Reader(path)
         (w, h, p, m) = reader.read()
         self.width = w
@@ -29,9 +40,30 @@ class Image:
         self.array = np.array(list(p), np.int16)
         # The class of the image
         self.species = species
+        self.gradients = [[self.calculate_gradient(x, y) for x in range(self.width)] for y in range(self.height)]
 
     def value(self, x, y):
         return self.array[y][x]
+
+    def calculate_gradient(self, x, y):
+        if x == 0 or x == self.width - 1 or y == 0 or y == self.height - 1:
+            return Gradient(0.0, 0.0, 0.0, 0.0)
+
+        gx = self.value(x+1, y) - self.value(x-1, y)
+        gy = self.value(x, y+1) - self.value(x, y-1)
+        magnitude = math.sqrt(gx**2 + gy**2)
+
+        orientation = math.atan2(gy, gx) * 180.0 / math.pi
+        if orientation < 0:
+            orientation += 360.0
+
+        lower_bin = int(orientation // 45.0) % 8
+        upper_bin = int(lower_bin + 1)
+
+        lower_weight = magnitude * (45.0 - (orientation - lower_bin * 45.0)) / 45.0
+        upper_weight = magnitude * (45.0 - (upper_bin * 45.0 - orientation)) / 45.0
+
+        return Gradient(lower_bin, upper_bin % 8, lower_weight, upper_weight)
 
 
 class Histogram:
@@ -57,26 +89,6 @@ class Area:
     def is_inside(self, x, y):
         raise NotImplementedError
 
-    def calculate_gradient(self, x, y, histogram):
-        if self.is_inside(x-1, y) and self.is_inside(x+1, y) and self.is_inside(x, y-1) and self.is_inside(x, y+1):
-            gx = self.image.value(x+1, y) - self.image.value(x-1, y)
-            gy = self.image.value(x, y+1) - self.image.value(x, y-1)
-            magnitude = math.sqrt(gx**2 + gy**2)
-            
-            orientation = math.atan2(gy, gx) * 180.0 / math.pi
-            if orientation < 0:
-                orientation += 360.0
-
-            lower_bin = int(orientation // 45.0) % 8
-            upper_bin = int(lower_bin + 1)
-
-            lower_weight = magnitude * (45.0 - (orientation - lower_bin * 45.0)) / 45.0
-            upper_weight = magnitude * (45.0 - (upper_bin * 45.0 - orientation)) / 45.0
-
-            histogram.add(lower_bin, lower_weight)
-            histogram.add(upper_bin % 8, upper_weight)
-
-
 class RectangleArea(Area):
     def __init__(self, image, left, top, width, height):
         Area.__init__(self, image)
@@ -90,11 +102,12 @@ class RectangleArea(Area):
 
     def create_histogram(self):
         histogram = Histogram()
-       
+
         for y in range(self.top, self.bottom):
             for x in range(self.left, self.right):
-                super().calculate_gradient(x, y, histogram)
-        
+                histogram.add(self.image.gradients[y][x].lower_bin, self.image.gradients[y][x].lower_weight)
+                histogram.add(self.image.gradients[y][x].upper_bin, self.image.gradients[y][x].upper_weight)
+
         histogram.normalize()
         return histogram
 
@@ -115,8 +128,9 @@ class CircleArea(Area):
         for y in range(int(self.center_x - self.radius/2), int(self.center_x + self.radius/2)):
             for x in range(int(self.center_y - self.radius/2), int(self.center_y + self.radius/2)):
                 if self.is_inside(x, y):
-                    super().calculate_gradient(x, y, histogram)
-        
+                    histogram.add(self.image.gradients[y][x].lower_bin, self.image.gradients[y][x].lower_weight)
+                    histogram.add(self.image.gradients[y][x].upper_bin, self.image.gradients[y][x].upper_weight)
+
         histogram.normalize()
         return histogram
 
@@ -231,7 +245,7 @@ class Floats3(Floats2):
     def div3(a, b):
         try: return Floats2(a.value / b.value)
         except ZeroDivisionError: return Floats2(1)
-    
+
 
 def HoG(image, shape, position, size):
     if shape.is_rectangle():
@@ -284,7 +298,7 @@ def eval_classification(individual):
 
     # Transform the tree expression in a callable function
     func = toolbox.compile(expr=individual)
-    
+
     # Randomly sample 30 images
     #train_set = random.sample(image_set, 30)
     train_set = image_set
@@ -304,13 +318,13 @@ def eval_classification(individual):
 
 def plot_tree(individual):
     import pygraphviz as pgv
-    
+
     nodes, edges, labels = gp.graph(individual)
     g = pgv.AGraph()
     g.add_nodes_from(nodes)
     g.add_edges_from(edges)
     g.layout(prog="dot")
-    
+
     for i in nodes:
         n = g.get_node(i)
         n.attr["label"] = labels[i]
@@ -356,11 +370,11 @@ def main():
     pset.addPrimitive(Floats.div,   [Floats, Floats], float)
     pset.addPrimitive(Floats2.div2, [Floats2, Floats2], Floats)
     pset.addPrimitive(Floats3.div3, [Floats3, Floats3], Floats2)
-    pset.addPrimitive(bins,  [Histogram, Index], float)
+    #pset.addPrimitive(bins,  [Histogram, Index], float)
     pset.addPrimitive(bins1, [Histogram, Index], Floats)
     pset.addPrimitive(bins2, [Histogram, Index], Floats2)
     pset.addPrimitive(bins3, [Histogram, Index], Floats3)
-    pset.addPrimitive(distance,  [Histogram, Histogram], float)
+    #pset.addPrimitive(distance,  [Histogram, Histogram], float)
     pset.addPrimitive(distance1, [Histogram, Histogram], Floats)
     pset.addPrimitive(distance2, [Histogram, Histogram], Floats2)
     pset.addPrimitive(distance3, [Histogram, Histogram], Floats3)
@@ -393,15 +407,18 @@ def main():
     toolbox.register("expr_mut", gp.genFull, min_=0, max_=2)
     toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
 
+    #pool = multiprocessing.Pool(3)
+    #toolbox.register("map", pool.map)
+
     pop = toolbox.population(n=100)
     hof = tools.HallOfFame(1)
-    
+
     stats = tools.Statistics(lambda ind: ind.fitness.values)
     stats.register("avg", np.mean)
     stats.register("std", np.std)
     stats.register("min", np.min)
     stats.register("max", np.max)
-    
+
     algorithms.eaSimple(pop, toolbox, 0.5, 0.2, 10, stats, halloffame=hof)
 
     expr = toolbox.individual()
@@ -412,9 +429,6 @@ def main():
 
 if __name__ == "__main__":
     pop, stats, hof = main()
-    print(stats['avg'])
-    print(stats['std'])
-    print(stats['min'])
-    print(stats['max'])
+    print(stats.compile(pop))
     print(hof[0])
     plot_tree(hof[0])
