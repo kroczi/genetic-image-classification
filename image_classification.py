@@ -15,6 +15,8 @@ from deap import gp
 from deap import tools
 
 DEBUG = False
+MULTITHREAD = True
+POOL_SIZE = 4
 MIN_WIDTH = 128
 MIN_HEIGHT = 128
 
@@ -407,8 +409,9 @@ def main():
     toolbox.register("expr_mut", gp.genFull, min_=0, max_=2)
     toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
 
-    #pool = multiprocessing.Pool(3)
-    #toolbox.register("map", pool.map)
+    if MULTITHREAD:
+        pool = multiprocessing.Pool(POOL_SIZE)
+        toolbox.register("map", pool.map)
 
     pop = toolbox.population(n=100)
     hof = tools.HallOfFame(1)
