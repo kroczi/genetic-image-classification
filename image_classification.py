@@ -5,6 +5,7 @@ import math
 import multiprocessing
 import numpy as np
 import operator
+import os
 import random
 
 from termcolor import colored
@@ -19,6 +20,13 @@ MULTITHREAD = True
 POOL_SIZE = 4
 MIN_WIDTH = 128
 MIN_HEIGHT = 128
+
+training_images_dir = '../DataSets/coil_20_proc/training/'
+negative_class_subdir = '0'
+positive_class_subdir = '1'
+
+negative_class_dir_path = os.path.join(training_images_dir, negative_class_subdir)
+positive_class_dir_path = os.path.join(training_images_dir, positive_class_subdir)
 
 toolbox = base.Toolbox()
 image_set = []
@@ -354,9 +362,10 @@ def plot_tree2(individual):
 
 def main():
     #random.seed(11)
-    for i in range(0, 40):
-        image_set.append(Image("../Dane/COIL20/obj1__" + str(i) + ".png", 0))
-        image_set.append(Image("../Dane/COIL20/obj2__" + str(i) + ".png", 1))
+    for filename in os.listdir(negative_class_dir_path):
+        image_set.append(Image(os.path.join(negative_class_dir_path, filename), 0))
+    for filename in os.listdir(positive_class_dir_path):
+        image_set.append(Image(os.path.join(positive_class_dir_path, filename), 1))
 
     pset = gp.PrimitiveSetTyped("MAIN", itertools.repeat(Image, 1), float, "IN")
 
