@@ -68,31 +68,31 @@ testing_images_dir = '../../Dane/image_classification_datasets/motion_tracking/t
 max_classs_id = 40
 
 def evaluate_classificator(negative_class_subdir, positive_class_subdir):
-    negative_class_train_dir_path = os.path.join(training_images_dir, str(negative_class_subdir))
-    positive_class_train_dir_path = os.path.join(training_images_dir, str(positive_class_subdir))
-    negative_class_test_dir_path = os.path.join(testing_images_dir, str(negative_class_subdir))
-    positive_class_test_dir_path = os.path.join(testing_images_dir, str(positive_class_subdir))
+	negative_class_train_dir_path = os.path.join(training_images_dir, str(negative_class_subdir))
+	positive_class_train_dir_path = os.path.join(training_images_dir, str(positive_class_subdir))
+	negative_class_test_dir_path = os.path.join(testing_images_dir, str(negative_class_subdir))
+	positive_class_test_dir_path = os.path.join(testing_images_dir, str(positive_class_subdir))
 
-    t = time.time()
-    pop, stats, hof = ic.generate_classificator(negative_class_train_dir_path, positive_class_train_dir_path)
-    elapsed = time.time() - t
+	t = time.time()
+	pop, stats, hof = ic.generate_classificator(negative_class_train_dir_path, positive_class_train_dir_path)
+	elapsed = time.time() - t
 
-    evaluator = Evaluator(str(hof[0]))
+	evaluator = Evaluator(str(hof[0]))
 
-    (neagtive_class_correctly_classified_stat, positive_class_correctly_classified_stat, both_class_correctly_classified_stat) = evaluator.classify_pair_of_class(negative_class_test_dir_path, positive_class_test_dir_path)
+	(neagtive_class_correctly_classified_stat, positive_class_correctly_classified_stat, both_class_correctly_classified_stat) = evaluator.classify_pair_of_class(negative_class_test_dir_path, positive_class_test_dir_path)
 
-    print(str(training_images_dir) + ';' +  str(negative_class_subdir) + ';' + \
-          str(positive_class_subdir) +';' + str(elapsed) + ';' + \
-          str(stats.compile(pop)) + ';' + str(hof[0]) + ';' + \
-          str(neagtive_class_correctly_classified_stat) + ';' + \
-          str(positive_class_correctly_classified_stat) + ';' + \
-          str(both_class_correctly_classified_stat))
+	print(str(training_images_dir) + ';' +  str(negative_class_subdir) + ';' + \
+		  str(positive_class_subdir) +';' + str(elapsed) + ';' + \
+		  str(stats.compile(pop)) + ';' + str(hof[0]) + ';' + \
+		  str(neagtive_class_correctly_classified_stat) + ';' + \
+		  str(positive_class_correctly_classified_stat) + ';' + \
+		  str(both_class_correctly_classified_stat))
 
 
 if __name__ == "__main__":
-    ic.prepare_genetic_tree_structure()
+	ic.prepare_genetic_tree_structure()
 
-    for combination in list(itertools.combinations(range(max_classs_id), 2)):
-        negative_class_subdir = combination[0]
-        positive_class_subdir = combination[1]
-        evaluate_classificator(negative_class_subdir, positive_class_subdir)
+	for combination in list(itertools.combinations(range(max_classs_id), 2)):
+		negative_class_subdir = combination[0]
+		positive_class_subdir = combination[1]
+		evaluate_classificator(negative_class_subdir, positive_class_subdir)
