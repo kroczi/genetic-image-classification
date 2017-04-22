@@ -4,6 +4,20 @@ import numpy as np
 import os
 import png
 
+testing_images_dir = '../DataSets/coil_20_proc/testing/'
+negative_class_subdir = '0'
+positive_class_subdir = '1'
+
+# Put your code, commpressed into string expression
+code = 'sub(bins1(HoG(IN0, Shape(0), Position(128, 33), Size(102, 61)), Index(5)), mul2(div3(bins3(HoG(IN0, Shape(0), Position(18, 53), Size(120, 12)), Index(2)), distance3(HoG(IN0, Shape(1), Position(88, 106), Size(114, 93)), HoG(IN0, Shape(0), Position(83, 54), Size(41, 26)))), distance2(HoG(IN0, Shape(0), Position(65, 93), Size(108, 60)), HoG(IN0, Shape(0), Position(57, 71), Size(54, 85)))))'
+
+def verify_images(classificator, images_dir):
+	print('New class:')
+	for filename in os.listdir(images_dir):
+		path_to_image = os.path.join(images_dir, filename)
+		image = Image(path_to_image)
+		print(str(filename) + ',' + str(classificator(image)))
+
 context = {
 	"__builtins__" : None, 
 	"add": Floats.add, "sub": Floats.sub, "mul": Floats.mul, "div": Floats.div,
@@ -15,13 +29,11 @@ context = {
 	"Image":Image, "Shape":Shape, "Position":Position, "Size":Size, "Histogram":Histogram, "Index":Index
 }
 
-# Put your code, commpressed into string expression
-code = 'sub(bins3(HoG(IN0, Shape(1), Position(61, 67), Size(21, 106)), Index(4)), mul3(distance3(HoG(IN0, Shape(0), Position(11, 50), Size(77, 118)), HoG(IN0, Shape(0), Position(25, 52), Size(65, 37))), distance3(HoG(IN0, Shape(0), Position(116, 81), Size(72, 90)), HoG(IN0, Shape(0), Position(69, 12), Size(103, 92)))))'
 evauluated_expression = 'lambda IN0: ' + code
 classificator = eval(evauluated_expression, context)
 
-images_dir = '../Dane/COIL20/'
-for filename in os.listdir(images_dir):
-    path_to_image = images_dir + filename 
-    image = Image(path_to_image)
-    print(str(filename) + ',' + str(classificator(image)))
+negative_images_dir = os.path.join(testing_images_dir, negative_class_subdir)
+positivie_images_dir = os.path.join(testing_images_dir, positive_class_subdir)
+
+verify_images(classificator, negative_images_dir)
+verify_images(classificator, positivie_images_dir)
