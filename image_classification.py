@@ -7,6 +7,8 @@ import numpy as np
 import operator
 import os
 import random
+import time
+from classifier_program import *
 
 from termcolor import colored
 from deap import algorithms
@@ -18,18 +20,11 @@ from deap import tools
 DEBUG = False
 MULTITHREAD = True
 POOL_SIZE = 4
-MIN_WIDTH = 128
-MIN_HEIGHT = 128
+MIN_WIDTH = 28
+MIN_HEIGHT = 28
 
-training_images_dir = '../DataSets/coil_20_proc/training/'
-negative_class_subdir = '0'
-positive_class_subdir = '1'
-
-negative_class_dir_path = os.path.join(training_images_dir, negative_class_subdir)
-positive_class_dir_path = os.path.join(training_images_dir, positive_class_subdir)
-
-toolbox = base.Toolbox()
-image_set = []
+training_images_dir = '../DataSets/motion_tracking/training/'
+testing_images_dir = '../DataSets/motion_tracking/testing/'
 
 class Gradient:
     def __init__(self, lower_bin, upper_bin, lower_weight, upper_weight):
@@ -256,6 +251,8 @@ class Floats3(Floats2):
         try: return Floats2(a.value / b.value)
         except ZeroDivisionError: return Floats2(1)
 
+def learn_rate(pop):
+	return np.max(pop) / len(image_set)
 
 def HoG(image, shape, position, size):
     if shape.is_rectangle():
@@ -358,14 +355,9 @@ def plot_tree2(individual):
     plt.show()
 
 
-#################################################
-
-def main():
-    #random.seed(11)
-    for filename in os.listdir(negative_class_dir_path):
-        image_set.append(Image(os.path.join(negative_class_dir_path, filename), 0))
-    for filename in os.listdir(positive_class_dir_path):
-        image_set.append(Image(os.path.join(positive_class_dir_path, filename), 1))
+def prepare_genetic_tree_structure():
+    global toolbox
+    toolbox = base.Toolbox()
 
     pset = gp.PrimitiveSetTyped("MAIN", itertools.repeat(Image, 1), float, "IN")
 
@@ -412,11 +404,27 @@ def main():
     toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.expr)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
     toolbox.register("compile", gp.compile, pset=pset)
-    toolbox.register("evaluate", eval_classification)
     toolbox.register("select", tools.selTournament, tournsize=3)
     toolbox.register("mate", gp.cxOnePoint)
     toolbox.register("expr_mut", gp.genFull, min_=0, max_=2)
     toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
+
+#################################################
+def generate_classificator(negative_class_train_dir_path, positive_class_train_dir_path):
+    #random.seed(11)
+    global image_set
+    image_set = []
+
+    for filename in os.listdir(negative_class_train_dir_path):
+        image_set.append(Image(os.path.join(negative_class_train_dir_path, filename), 0))
+    for filename in os.listdir(positive_class_train_dir_path):
+        image_set.append(Image(os.path.join(positive_class_train_dir_path, filename), 1))
+
+    if DEBUG:
+        print('Loaded {} images from {} class training dataset'.format(negative_class_train_dir_path, len(os.listdir(negative_class_train_dir_path))))
+        print('Loaded {} images from {} class training dataset'.format(positive_class_dir_path, len(os.listdir(positive_class_train_dir_path))))
+
+    toolbox.register("evaluate", eval_classification)
 
     if MULTITHREAD:
         pool = multiprocessing.Pool(POOL_SIZE)
@@ -430,17 +438,39 @@ def main():
     stats.register("std", np.std)
     stats.register("min", np.min)
     stats.register("max", np.max)
+    stats.register("learn_rate", learn_rate)
 
-    algorithms.eaSimple(pop, toolbox, 0.5, 0.2, 10, stats, halloffame=hof)
+    algorithms.eaSimple(pop, toolbox, 0.7, 0.4, 20, stats, halloffame=hof, verbose=False)
 
-    expr = toolbox.individual()
-    nodes, edges, labels = gp.graph(expr)
+    toolbox.unregister("evaluate")
+    toolbox.unregister("map")
+    pool.close()
 
     return pop, stats, hof
 
+def evaluate_classificator(negative_class_subdir, positive_class_subdir):
+    negative_class_train_dir_path = os.path.join(training_images_dir, str(negative_class_subdir))
+    positive_class_train_dir_path = os.path.join(training_images_dir, str(positive_class_subdir))
+    negative_class_test_dir_path = os.path.join(testing_images_dir, str(negative_class_subdir))
+    positive_class_test_dir_path =os.path.join(testing_images_dir, str(positive_class_subdir))
+
+    t = time.time()
+    pop, stats, hof = generate_classificator(negative_class_train_dir_path, positive_class_train_dir_path)
+    elapsed = time.time() - t
+
+    classificator = Classificator(str(hof[0]))
+
+    (neagtive_class_correctly_classified_stat, positive_class_correctly_classified_stat, both_class_correctly_classified_stat) = classificator.classify_pair_of_class(negative_class_test_dir_path, positive_class_test_dir_path)
+
+    print(str(training_images_dir) + ';' +  str(negative_class_subdir) + ';' + str(positive_class_subdir) +';' + str(elapsed) + ';' + str(stats.compile(pop)) + ';' + str(hof[0]) + ';' + str(neagtive_class_correctly_classified_stat) + ';' + str(positive_class_correctly_classified_stat) + ';' + str(both_class_correctly_classified_stat))
+
 
 if __name__ == "__main__":
-    pop, stats, hof = main()
-    print(stats.compile(pop))
-    print(hof[0])
-    plot_tree(hof[0])
+    prepare_genetic_tree_structure()
+
+    max_classs_id = 40
+    for combination in list(itertools.combinations(range(max_classs_id), 2)):
+        negative_class_subdir = combination[0]
+        positive_class_subdir = combination[1]
+        evaluate_classificator(negative_class_subdir, positive_class_subdir)
+
