@@ -9,7 +9,7 @@ import png
 from area import Histogram
 from data_types import *
 from image import Image
-import image_classification as ic
+import binary_classifier_builder as bcb
 
 class Evaluator():
 
@@ -74,7 +74,7 @@ def evaluate_classificator(negative_class_subdir, positive_class_subdir):
 	positive_class_test_dir_path = os.path.join(testing_images_dir, str(positive_class_subdir))
 
 	t = time.time()
-	pop, stats, hof = ic.generate_classificator(negative_class_train_dir_path, positive_class_train_dir_path)
+	pop, stats, hof = bcb.generate_classificator(negative_class_train_dir_path, positive_class_train_dir_path)
 	elapsed = time.time() - t
 
 	evaluator = Evaluator(str(hof[0]))
@@ -90,7 +90,7 @@ def evaluate_classificator(negative_class_subdir, positive_class_subdir):
 
 
 if __name__ == "__main__":
-	ic.prepare_genetic_tree_structure()
+	bcb.prepare_genetic_tree_structure()
 
 	for combination in list(itertools.combinations(range(max_classs_id), 2)):
 		negative_class_subdir = combination[0]
