@@ -149,8 +149,8 @@ def generate_classificator(negative_class_train_dir_path, positive_class_train_d
 		train_set.append(Image(os.path.join(positive_class_train_dir_path, filename), 1))
 
 	if DEBUG:
-		print('Loaded {} images from {} class training dataset'.format(negative_class_train_dir_path, len(os.listdir(negative_class_train_dir_path))))
-		print('Loaded {} images from {} class training dataset'.format(positive_class_train_dir_path, len(os.listdir(positive_class_train_dir_path))))
+		print('Loaded {} images from {} class training dataset'.format(len(os.listdir(negative_class_train_dir_path), negative_class_train_dir_path)))
+		print('Loaded {} images from {} class training dataset'.format(len(os.listdir(positive_class_train_dir_path), positive_class_train_dir_path)))
 
 	toolbox.register("evaluate", eval_classification)
 
@@ -177,3 +177,4 @@ def generate_classificator(negative_class_train_dir_path, positive_class_train_d
 	   pool.close()
 
 	return pop, stats, hof
+
