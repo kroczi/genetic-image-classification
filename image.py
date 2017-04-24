@@ -49,3 +49,47 @@ class Image:
 		upper_weight = magnitude * (45.0 - (upper_bin * 45.0 - orientation)) / 45.0
 
 		return Gradient(lower_bin, upper_bin % 8, lower_weight, upper_weight)
+
+	def resize(self, new_width, new_height):
+		tile_width = self.width // new_width
+		tile_height = self.height // new_height
+		new_array = np.zeros((new_width, new_height), np.float16)
+
+		for j in range(0, new_height - 1):
+			for i in range(0, new_width - 1):
+				new_value = 0
+				for y in range(j * tile_height, (j + 1) * tile_height - 1):
+					for x in range(i * tile_width, (i + 1) * tile_width - 1):
+						#print(i, j, x, y, self.width, self.height)
+						new_value += self.value(x, y)
+				new_array[j][i] = new_value / (tile_width * tile_height)
+
+		i = new_width - 1
+		temp_tile_width = self.width - (i * tile_width)
+		for j in range(new_height - 1):
+			new_value = 0
+			for y in range(j * tile_height, (j + 1) * tile_height - 1):
+				for x in range(i * tile_width, self.width):
+					new_value += self.value(x, y)
+			new_array[j][i] = new_value / (temp_tile_width * tile_height)
+
+		j = new_height - 1
+		temp_tile_height = self.height - (j * tile_height)
+		for i in range(new_width - 1):
+			new_value = 0
+			for y in range(j * tile_height, self.height):
+				for x in range(i * tile_width, (i + 1) * tile_width - 1):
+					new_value += self.value(x, y)
+			new_array[j][i] = new_value / (tile_width * temp_tile_height)
+
+		i = new_width - 1
+		j = new_height - 1
+		new_value = 0
+		for y in range(j * tile_height, self.height):
+			for x in range(i * tile_width, self.width):
+				new_value += self.value(x, y)
+		new_array[j][i] = new_value / (temp_tile_width * temp_tile_height)
+
+		self.width = new_width
+		self.height = new_height
+		self.array = new_array
