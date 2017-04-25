@@ -38,7 +38,7 @@ def eval_classification(individual):
 		if correctly_classified:
 			result += 1
 
-		logger.debug(map_eval_result_to_string(correctly_classified)  + str(outcome))
+		# logger.debug(map_eval_result_to_string(correctly_classified)  + str(outcome))
 
 	return result,
 
@@ -163,9 +163,9 @@ def generate_classificator(parameters_config, negative_class_train_dir_path, pos
 	algorithms.eaSimple(pop, toolbox, crossover, mutation, epochs, stats, halloffame=hof, verbose=False)
 
 	toolbox.unregister("evaluate")
-	toolbox.unregister("map")
 
 	if parameters_config.getboolean("multithread"):
-	   pool.close()
+		toolbox.register("map", map)
+		pool.close()
 
 	return pop, stats, hof
