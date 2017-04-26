@@ -153,18 +153,20 @@ def acquire_configuration(dataset_config_file, parameters_config_file, dataset_p
 if __name__ == "__main__":
 	DATASET_CONFIG_FILE = 'dataset_config.ini'
 	PARAMETERS_CONFIG_FILE = 'parameters_config.ini'
-	DATASET_PROFILE = "MOTION_TRACKING"
-	PARAMETERS_PROFILE = "PARAMETERS_1"
+	DATASET_PROFILE = ["MOTION_TRACKING"]
+	PARAMETERS_PROFILE = ["PARAMETERS_1"]
 
 	setup_logging()
-	(dataset_config, parameters_config) = acquire_configuration(DATASET_CONFIG_FILE, PARAMETERS_CONFIG_FILE, DATASET_PROFILE, PARAMETERS_PROFILE)
 
-	logger.info("Starting computations with following parameters configuration: " + str(PARAMETERS_PROFILE))
-	logger.info(" and following dataset configuration: " + str(DATASET_PROFILE))
+	for (dataset_profile, parameters_profile) in zip(DATASET_PROFILE, PARAMETERS_PROFILE):
+		(dataset_config, parameters_config) = acquire_configuration(DATASET_CONFIG_FILE, PARAMETERS_CONFIG_FILE, dataset_profile, parameters_profile)
 
-	bcb.prepare_genetic_tree_structure(dataset_config.getint("min_width"), dataset_config.getint("min_height"))
+		logger.info("Starting computations with following parameters configuration: " + str(PARAMETERS_PROFILE))
+		logger.info(" and following dataset configuration: " + str(DATASET_PROFILE))
 
-	for combination in list(itertools.combinations(range(dataset_config.getint("classes")), 2)):
-		negative_class_subdir = combination[0]
-		positive_class_subdir = combination[1]
-		evaluate_classificator(dataset_config, parameters_config, negative_class_subdir, positive_class_subdir)
+		bcb.prepare_genetic_tree_structure(dataset_config.getint("min_width"), dataset_config.getint("min_height"))
+
+		for combination in list(itertools.combinations(range(dataset_config.getint("classes")), 2)):
+			negative_class_subdir = combination[0]
+			positive_class_subdir = combination[1]
+			evaluate_classificator(dataset_config, parameters_config, negative_class_subdir, positive_class_subdir)
