@@ -153,8 +153,8 @@ def acquire_configuration(dataset_config_file, parameters_config_file, dataset_p
 if __name__ == "__main__":
 	DATASET_CONFIG_FILE = 'dataset_config.ini'
 	PARAMETERS_CONFIG_FILE = 'parameters_config.ini'
-	DATASET_PROFILE = ["MOTION_TRACKING"]
-	PARAMETERS_PROFILE = ["PARAMETERS_1"]
+	DATASET_PROFILE = ["MOTION_TRACKING", "MNIST"]
+	PARAMETERS_PROFILE = ["MOTION_TRACKING_PARAMETERS", "MNIST_PARAMETERS"]
 
 	setup_logging()
 
