@@ -157,6 +157,9 @@ if __name__ == "__main__":
 	PARAMETERS_PROFILE = ["MOTION_TRACKING_PARAMETERS", "MNIST_PARAMETERS"]
 
 	setup_logging()
+	positionGenerator = PositionGenerator(0, 0)
+	sizeGenerator = SizeGenerator(0, 0)
+	bcb.prepare_genetic_tree_structure(positionGenerator, sizeGenerator)
 
 	for (dataset_profile, parameters_profile) in zip(DATASET_PROFILE, PARAMETERS_PROFILE):
 		(dataset_config, parameters_config) = acquire_configuration(DATASET_CONFIG_FILE, PARAMETERS_CONFIG_FILE, dataset_profile, parameters_profile)
@@ -164,7 +167,8 @@ if __name__ == "__main__":
 		logger.info("Starting computations with following parameters configuration: " + str(PARAMETERS_PROFILE))
 		logger.info(" and following dataset configuration: " + str(DATASET_PROFILE))
 
-		bcb.prepare_genetic_tree_structure(dataset_config.getint("min_width"), dataset_config.getint("min_height"))
+		positionGenerator.setNewBorders(dataset_config.getint("min_width"), dataset_config.getint("min_height"))
+		sizeGenerator.setNewBorders(dataset_config.getint("min_width"), dataset_config.getint("min_height"))
 
 		for combination in list(itertools.combinations(range(dataset_config.getint("classes")), 2)):
 			negative_class_subdir = combination[0]
