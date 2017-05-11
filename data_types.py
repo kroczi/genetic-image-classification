@@ -24,10 +24,6 @@ class Size:
 		return "Size(" + str(self.width) + ", " + str(self.height) + ")"
 
 class SizeGenerator:
-	def __init__(self, maxWidth, maxHeight):
-		self.maxWidth = maxWidth
-		self.maxHeight = maxHeight
-
 	def setNewBorders(self, maxWidth, maxHeight):
 		self.maxWidth = maxWidth
 		self.maxHeight = maxHeight
@@ -44,10 +40,6 @@ class Position:
 		return "Position(" + str(self.x) + ", " + str(self.y) + ")"
 
 class PositionGenerator:
-	def __init__(self, maxWidth, maxHeight):
-		self.maxWidth = maxWidth
-		self.maxHeight = maxHeight
-
 	def setNewBorders(self, maxWidth, maxHeight):
 		self.maxWidth = maxWidth
 		self.maxHeight = maxHeight
