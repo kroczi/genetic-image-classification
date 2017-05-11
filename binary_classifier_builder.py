@@ -75,7 +75,7 @@ def plot_tree2(individual):
 	plt.show()
 
 
-def prepare_genetic_tree_structure(min_width, min_height):
+def prepare_genetic_tree_structure(positionGenerator, sizeGenerator):
 	global toolbox
 	toolbox = base.Toolbox()
 
@@ -104,8 +104,8 @@ def prepare_genetic_tree_structure(min_width, min_height):
 	pset.addPrimitive(HoG, [Image, Shape, Position, Size], Histogram)
 
 	pset.addEphemeralConstant("shape", lambda: Shape(random.randint(0, 1)), Shape)
-	pset.addEphemeralConstant("coords", lambda: Position(random.randint(0, min_width), random.randint(0, min_height)), Position)
-	pset.addEphemeralConstant("size", lambda: Size(random.randint(3, min_width), random.randint(3, min_height)), Size)
+	pset.addEphemeralConstant("coords", lambda: positionGenerator.generate(), Position)
+	pset.addEphemeralConstant("size", lambda: sizeGenerator.generate(), Size)
 	pset.addEphemeralConstant("index", lambda: Index(random.randint(0, 7)), Index)
 
 	logger.debug(pset.primitives)
@@ -127,6 +127,7 @@ def prepare_genetic_tree_structure(min_width, min_height):
 	toolbox.register("mate", gp.cxOnePoint)
 	toolbox.register("expr_mut", gp.genFull, min_=0, max_=2)
 	toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
+
 
 
 def generate_classificator(parameters_config, negative_class_train_dir_path, positive_class_train_dir_path):

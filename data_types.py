@@ -1,5 +1,6 @@
 #! /usr/bin/python3
 import math
+import random
 
 from area import RectangleArea, CircleArea
 
@@ -14,7 +15,6 @@ class Shape:
 	def __repr__(self):
 		return "Shape(" + str(self.value) + ")"
 
-
 class Size:
 	def __init__(self, width, height):
 		self.width = width
@@ -23,6 +23,13 @@ class Size:
 	def __repr__(self):
 		return "Size(" + str(self.width) + ", " + str(self.height) + ")"
 
+class SizeGenerator:
+	def setNewBorders(self, maxWidth, maxHeight):
+		self.maxWidth = maxWidth
+		self.maxHeight = maxHeight
+
+	def generate(self):
+		return Size(random.randint(3, self.maxWidth), random.randint(3, self.maxHeight))
 
 class Position:
 	def __init__(self, x, y):
@@ -32,6 +39,13 @@ class Position:
 	def __repr__(self):
 		return "Position(" + str(self.x) + ", " + str(self.y) + ")"
 
+class PositionGenerator:
+	def setNewBorders(self, maxWidth, maxHeight):
+		self.maxWidth = maxWidth
+		self.maxHeight = maxHeight
+
+	def generate(self):
+		return Position(random.randint(0, self.maxWidth), random.randint(0, self.maxHeight))
 
 class Index:
 	def __init__(self, value):
@@ -39,7 +53,6 @@ class Index:
 
 	def __repr__(self):
 		return "Index(" + str(self.value) + ")"
-
 
 class Floats:
 	def __init__(self, value):
