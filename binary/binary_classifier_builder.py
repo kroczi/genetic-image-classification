@@ -5,14 +5,14 @@ import multiprocessing
 import os
 import random
 
-from termcolor import colored
-from deap import algorithms, base, creator, gp, tools
 import numpy as np
-
-from area import Histogram
-from image import Image
-from data_types import Floats, Floats2, Floats3, Shape, Position, Size, Index, \
+from model.data_types import Floats, Floats2, Floats3, Shape, Position, Size, Index, \
 					   HoG, bins1, bins2, bins3, distance1, distance2, distance3
+from deap import algorithms, base, creator, gp, tools
+from model.image import Image
+from termcolor import colored
+
+from model.area import Histogram
 
 logger = logging.getLogger('ic')
 

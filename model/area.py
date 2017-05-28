@@ -1,7 +1,6 @@
 #! /usr/bin/python3
 import numpy as np
 
-from image import Image
 
 class Histogram:
 	def __init__(self):

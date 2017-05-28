@@ -4,13 +4,13 @@ import logging
 import os
 import time
 
-from area import Histogram
-import binary_classifier_builder as bcb
-from config_utils import acquire_configuration
-from data_types import *
-from image import Image
-from log_utils import setup_logging
+from model.data_types import *
+from model.image import Image
+from utils.log_utils import setup_logging
 
+from binary import binary_classifier_builder as bcb
+from model.area import Histogram
+from utils.config_utils import acquire_configuration
 
 logger = logging.getLogger('ic')
 
@@ -93,10 +93,10 @@ def evaluate_classifier(dataset_config, parameters_config, negative_class_subdir
 
 
 if __name__ == "__main__":
-	DATASET_CONFIG_FILE = 'dataset_config.ini'
-	PARAMETERS_CONFIG_FILE = 'parameters_config.ini'
-	DATASET_PROFILE = ["MOTION_TRACKING", "MNIST"]
-	PARAMETERS_PROFILE = ["MOTION_TRACKING_PARAMETERS", "MNIST_PARAMETERS"]
+	DATASET_CONFIG_FILE = 'config/dataset_config.ini'
+	PARAMETERS_CONFIG_FILE = 'config/parameters_config.ini'
+	DATASET_PROFILE = ["MOTION_TRACKING"]
+	PARAMETERS_PROFILE = ["MOTION_TRACKING_PARAMETERS"]
 
 	setup_logging()
 	positionGenerator = PositionGenerator()

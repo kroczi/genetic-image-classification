@@ -2,11 +2,11 @@
 import os
 
 import numpy as np
-
-from area import Histogram
-from image import Image
-from data_types import Floats, Floats2, Floats3, Shape, Position, Size, Index, \
+from model.data_types import Floats, Floats2, Floats3, Shape, Position, Size, Index, \
 						HoG, bins1, bins2, bins3, distance1, distance2, distance3
+from model.image import Image
+
+from model.area import Histogram
 
 context = {
 	"__builtins__": None,
