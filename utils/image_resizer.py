@@ -1,9 +1,8 @@
 #! /usr/bin/python3
 import os
-
 import png
 
-from image import Image
+from model.image import Image
 
 
 input_path_base = '../../Dane/image_classification_datasets/coil_20_proc'

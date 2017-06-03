@@ -2,7 +2,7 @@
 import math
 import random
 
-from area import RectangleArea, CircleArea
+from model.area import RectangleArea, CircleArea
 
 
 class Shape:
