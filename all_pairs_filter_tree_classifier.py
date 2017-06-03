@@ -1,12 +1,10 @@
 #! /usr/bin/python3
 import os
 
-import numpy as np
-
 from area import Histogram
 from image import Image
 from data_types import Floats, Floats2, Floats3, Shape, Position, Size, Index, \
-						HoG, bins1, bins2, bins3, distance1, distance2, distance3
+	HoG, bins1, bins2, bins3, distance1, distance2, distance3
 
 context = {
 	"__builtins__": None,
@@ -20,55 +18,61 @@ context = {
 }
 
 
-class ClassifierWithPriority:
-	def __init__(self, expression, priority=1):
-		self.evaluator = eval('lambda IN0: ' + expression.strip(), context)
-		self.priority = float(priority)
-
-
 def get_classifiers(classifiers_file):
 	with open(classifiers_file) as classifiers:
-		return [ClassifierWithPriority(*(line.strip().split(";"))) for line in classifiers.readlines()]
+		return [eval('lambda IN0: ' + x.strip(), context) for x in classifiers.readlines()]
 
 
-def ovo_classification(image, classes, classifiers, indices):
-	ranking = np.zeros((classes,))
-	index = 0
+def get_classifier_between(i, j, classes, classifiers):
+	if i > j:
+		(i, j) = (j, i)
 
+	return classifiers[int((classes - 1 + classes - i) * i / 2 + (j - i - 1))]
+
+
+def apft_classification(image, classes, classifiers):
+	current_queue = []
 	for i in range(classes):
-		for j in range(i + 1, classes):
-			if i in indices and j in indices:
-				if classifiers[index].evaluator(image) > 0:
-					ranking[j] += classifiers[index].priority
+		current_queue.append(i)
+
+	while len(current_queue) > 1:
+		next_queue = []
+		while len(current_queue) > 0:
+			i = current_queue.pop(0)
+			if len(current_queue) > 0:
+				j = current_queue.pop(0)
+				if get_classifier_between(i, j, classes, classifiers)(image) > 0:
+					next_queue.append(j)
 				else:
-					ranking[i] += classifiers[index].priority
-			index += 1
+					next_queue.append(i)
+			else:
+				next_queue.append(i)
 
-	return ranking
+		current_queue = next_queue
+
+	return current_queue[0]
 
 
-def ovo_classification_of_whole_dataset(base_directory, classes, classifiers, indices):
+def apft_classification_of_whole_dataset(base_directory, classes, classifiers):
 	for c in range(classes):
 		for directory in os.listdir(base_directory):
 			if os.path.isdir(os.path.join(base_directory, directory)):
 				for filename in os.listdir(os.path.join(base_directory, directory, str(c))):
 					path = os.path.join(base_directory, directory, str(c), filename)
 					image = Image(path, c)
-					ranking = ovo_classification(image, classes, classifiers, indices)
-					print(str(path) + ', ' + str(c) + ', ' + str(ranking.argmax()))
+					result = apft_classification(classifiers, image, classifiers)
+					print(str(path) + ', ' + str(c) + ', ' + str(result))
 
 
 if __name__ == "__main__":
 	CLASSES = 41
-	CLASSIFIERS_FILE = "../../Dane/image_classification_datasets/motion_tracking/motion_tracking_classifiers_improved_with_priorities.txt"
+	CLASSIFIERS_FILE = "../../Dane/image_classification_datasets/motion_tracking/motion_tracking_classifiers.txt"
 	BASE_DIRECTORY = '../../Dane/image_classification_datasets/motion_tracking/'
 
 	classifiers = get_classifiers(CLASSIFIERS_FILE)
-	indices = list(range(CLASSES))
-	ovo_classification_of_whole_dataset(BASE_DIRECTORY, CLASSES, classifiers, indices)
+	apft_classification_of_whole_dataset(BASE_DIRECTORY, CLASSES, classifiers)
 
 # IMAGE_FILE = "../../Dane/image_classification_datasets/motion_tracking/training/30/0021.png"
 # image = Image(IMAGE_FILE)
-# indices = list(range(CLASSES))
-# ranking = ovo_classification(classifiers, indices, image)
-# print(str(IMAGE_FILE) + ', ' + str(ranking.argmax()))
+# result = apft_classification(classifiers, image)
+# print(str(IMAGE_FILE) + ', ' + str(result))
