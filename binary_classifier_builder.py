@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 import itertools
+import logging
 import multiprocessing
-import operator
 import os
 import random
 
@@ -14,12 +14,7 @@ from image import Image
 from data_types import Floats, Floats2, Floats3, Shape, Position, Size, Index, \
 					   HoG, bins1, bins2, bins3, distance1, distance2, distance3
 
-DEBUG = True
-MULTITHREAD = True
-POOL_SIZE = 4
-MIN_WIDTH = 28
-MIN_HEIGHT = 28
-
+logger = logging.getLogger('ic')
 
 def learn_rate(pop):
 	return np.max(pop) / len(train_set)
@@ -32,9 +27,6 @@ def map_eval_result_to_string(result):
 
 
 def eval_classification(individual):
-	if DEBUG:
-		print(individual)
-
 	# Transform the tree expression in a callable function
 	func = toolbox.compile(expr=individual)
 
@@ -43,10 +35,10 @@ def eval_classification(individual):
 	for image in train_set:
 		outcome = func(image)
 		correctly_classified = ((outcome > 0 and image.species == 1) or (outcome < 0 and image.species == 0))
-		if (correctly_classified):
+		if correctly_classified:
 			result += 1
-		if DEBUG:
-			print(map_eval_result_to_string(correctly_classified)  + str(outcome))
+
+		# logger.debug(map_eval_result_to_string(correctly_classified)  + str(outcome))
 
 	return result,
 
@@ -83,7 +75,7 @@ def plot_tree2(individual):
 	plt.show()
 
 
-def prepare_genetic_tree_structure():
+def prepare_genetic_tree_structure(positionGenerator, sizeGenerator):
 	global toolbox
 	toolbox = base.Toolbox()
 
@@ -112,13 +104,12 @@ def prepare_genetic_tree_structure():
 	pset.addPrimitive(HoG, [Image, Shape, Position, Size], Histogram)
 
 	pset.addEphemeralConstant("shape", lambda: Shape(random.randint(0, 1)), Shape)
-	pset.addEphemeralConstant("coords", lambda: Position(random.randint(0, MIN_WIDTH), random.randint(0, MIN_HEIGHT)), Position)
-	pset.addEphemeralConstant("size", lambda: Size(random.randint(3, MIN_WIDTH), random.randint(3, MIN_HEIGHT)), Size)
+	pset.addEphemeralConstant("coords", lambda: positionGenerator.generate(), Position)
+	pset.addEphemeralConstant("size", lambda: sizeGenerator.generate(), Size)
 	pset.addEphemeralConstant("index", lambda: Index(random.randint(0, 7)), Index)
 
-	if DEBUG:
-		print (pset.primitives)
-		print (pset.terminals)
+	logger.debug(pset.primitives)
+	logger.debug(pset.terminals)
 
 	pset.context['Position'] = Position
 	pset.context['Shape'] = Shape
@@ -138,7 +129,8 @@ def prepare_genetic_tree_structure():
 	toolbox.register("mutate", gp.mutUniform, expr=toolbox.expr_mut, pset=pset)
 
 
-def generate_classificator(negative_class_train_dir_path, positive_class_train_dir_path):
+
+def generate_classificator(parameters_config, negative_class_train_dir_path, positive_class_train_dir_path):
 	#random.seed(11)
 	global train_set
 	train_set = []
@@ -148,33 +140,33 @@ def generate_classificator(negative_class_train_dir_path, positive_class_train_d
 	for filename in os.listdir(positive_class_train_dir_path):
 		train_set.append(Image(os.path.join(positive_class_train_dir_path, filename), 1))
 
-	if DEBUG:
-		print('Loaded {} images from {} class training dataset'.format(len(os.listdir(negative_class_train_dir_path), negative_class_train_dir_path)))
-		print('Loaded {} images from {} class training dataset'.format(len(os.listdir(positive_class_train_dir_path), positive_class_train_dir_path)))
+	logger.debug('Loaded {} images from {} class training dataset'.format(len(os.listdir(negative_class_train_dir_path)), negative_class_train_dir_path))
+	logger.debug('Loaded {} images from {} class training dataset'.format(len(os.listdir(positive_class_train_dir_path)), positive_class_train_dir_path))
 
 	toolbox.register("evaluate", eval_classification)
 
-	if MULTITHREAD:
-		pool = multiprocessing.Pool(POOL_SIZE)
+	if parameters_config.getboolean("multithread"):
+		pool = multiprocessing.Pool(parameters_config.getint("pool_size"))
 		toolbox.register("map", pool.map)
 
-	pop = toolbox.population(n=100)
-	hof = tools.HallOfFame(1)
-
-	stats = tools.Statistics(lambda ind: ind.fitness.values)
+	stats = tools.Statistics(lambda individual: individual.fitness.values)
 	stats.register("avg", np.mean)
 	stats.register("std", np.std)
 	stats.register("min", np.min)
 	stats.register("max", np.max)
 	stats.register("learn_rate", learn_rate)
 
-	algorithms.eaSimple(pop, toolbox, 0.7, 0.4, 20, stats, halloffame=hof, verbose=False)
+	pop = toolbox.population(n=parameters_config.getint("population"))
+	crossover = parameters_config.getfloat("crossover")
+	mutation = parameters_config.getfloat("mutation")
+	epochs = parameters_config.getint("epochs")
+	hof = tools.HallOfFame(1)
+	algorithms.eaSimple(pop, toolbox, crossover, mutation, epochs, stats, halloffame=hof, verbose=False)
 
 	toolbox.unregister("evaluate")
-	toolbox.unregister("map")
 
-	if MULTITHREAD:
-	   pool.close()
+	if parameters_config.getboolean("multithread"):
+		toolbox.register("map", map)
+		pool.close()
 
 	return pop, stats, hof
-
